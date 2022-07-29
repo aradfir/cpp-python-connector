@@ -2,7 +2,7 @@ import socket
 
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-import goalie_model
+import QLearning_sample
 import models
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
