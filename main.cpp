@@ -5,8 +5,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
-#include <chrono>
-#include <sstream>
+
+#include "Tensor.h"
 
 
 using namespace std::chrono;
@@ -15,140 +15,6 @@ using namespace std::chrono;
 using namespace std;
 int sock = 0, client_fd = 0;
 
-
-class Tensor {
-    vector<int> shape;
-    vector<double> data;
-public:
-//    Tensor(vector<int> &shape,vector<T> &data){
-//        std::cout<<"HIIIIII";
-//        this->shape=shape;
-//        this->data=data;
-//    }
-//    Tensor(vector<int>& shape,T default_value){
-//        std::cout<<"HIIIIII";
-//        this->shape=shape;
-//        this->data=vector<T>(getSize(shape),default_value);
-//    }
-    Tensor(const vector<int> &shape, const vector<double> &data) {
-        this->shape = shape;
-        this->data = data;
-    }
-
-    Tensor(const vector<int> &shape, const double &default_value) {
-        this->shape = shape;
-        this->data = vector<double>(this->getSize(), default_value);
-    }
-
-    vector<int> &getShape() {
-        return shape;
-    }
-
-    vector<double> &getData() {
-        return data;
-    }
-
-    bool reShape(const vector<int> &new_shape) {
-        if (getSize(new_shape) != this->getSize()) {
-            throw std::invalid_argument("Shape does not match input data length!");
-        }
-        this->shape = new_shape;
-        return true;
-    }
-
-    long long getSize() {
-        return getSize(this->shape);
-    }
-
-    explicit operator std::string() const {
-        stringstream ss;
-
-        for (int i = 0; i < this->shape.size(); i++) {
-            ss << shape[i];
-            if (i != shape.size() - 1) {
-                ss << ",";
-            }
-        }
-        ss << " ";
-        for (int i = 0; i < data.size(); i++) {
-            ss << data[i];
-            if (i != data.size() - 1) {
-                ss << ",";
-            }
-        }
-        return ss.str();
-    }
-
-
-    double &operator[](const vector<int> &idx) {
-        int idx_ = 0;
-        if (idx.size() != this->shape.size()) {
-            throw std::invalid_argument("Index does not match shape!");
-        }
-        for (int i = 0; i < idx.size(); i++) {
-            idx_ *= shape[i];
-            idx_ += idx[i];
-        }
-        return data[idx_];
-    }
-
-    static Tensor *from_string(string str) {
-        vector<int> shape;
-        vector<double> data;
-        int i = 0;
-        while (str[i] != ' ') {
-            int j = i;
-            while (str[j] != ',' && str[j] != ' ') {
-                j++;
-            }
-            shape.push_back(stoi(str.substr(i, j - i)));
-
-            i = j + 1;
-            if (str[j] == ' ')
-                break;
-        }
-        //i++;
-        while (i < str.size()) {
-            int j = i;
-            while (str[j] != ',' && str[j] != ' ') {
-                j++;
-            }
-
-            data.push_back(stod(str.substr(i, j - i)));
-
-            i = j + 1;
-        }
-        return new Tensor(shape, data);
-    }
-
-
-    static Tensor *from_string(const vector<int> &shape, string str) {
-        vector<double> data;
-        for (int i = 0; i < str.size(); i++) {
-            if (str[i] == ',') {
-                data.push_back(stod(str.substr(0, i)));
-                str = str.substr(i + 1);
-                i = 0;
-            }
-        }
-
-        data.push_back(stod(str));
-        if (data.size() != getSize(shape)) {
-            throw std::invalid_argument("Shape does not match input data length!");
-        }
-        return new Tensor(shape, data);
-    }
-
-
-private:
-    static long long getSize(const vector<int> &input_shape) {
-        long long size = 1;
-        for (int i: input_shape) {
-            size *= i;
-        }
-        return size;
-    }
-};
 
 int initialize_data_socket() {
     int valread;
@@ -208,6 +74,7 @@ Tensor mazeToTensor(vector<vector<int>> maze, int pos[2]) {
             t[{8 * i + j}] = maze[i][j];
     t[{64}] = pos[0];
     t[{65}] = pos[1];
+    t.reShape({1, 66});
     return t;
 
 }
@@ -220,7 +87,7 @@ void mazeGame() {
     maze[pos[0]][pos[1]] = 1;
     maze[end[0]][end[1]] = 2;
     Tensor t = mazeToTensor(maze, pos);
-    t.reShape({1, 66});
+
     string out_message;
     Tensor *res = send_data("QLearning_sample init_state", "", t, out_message);
     cout << out_message << string(*res) << endl;
@@ -261,9 +128,7 @@ void mazeGame() {
 
         if (pos[0] == end[0] && pos[1] == end[1])
             reward = 100;
-
         t = mazeToTensor(maze, pos);
-        t.reShape({1, 66});
         bool is_fin = pos[0] == end[0] && pos[1] == end[1];
         string reward_fin = to_string(reward) + " " + to_string(is_fin);
         res = send_data("QLearning_sample get_reward_new_state", reward_fin, t, out_message);
