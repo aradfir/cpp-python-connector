@@ -15,14 +15,40 @@ using namespace std::chrono;
 using namespace std;
 PythonConnector con(PORT);
 
-Tensor mazeToTensor(vector<vector<int>> maze, int pos[2]) {
-    Tensor t({66}, 0);
-    for (int i = 0; i < 8; i++)
-        for (int j = 0; j < 8; j++)
-            t[{8 * i + j}] = maze[i][j];
-    t[{64}] = pos[0];
-    t[{65}] = pos[1];
-    t.reShape({1, 66});
+bool isPositionLegal(int new_pos[2], vector<vector<int>> &maze) {
+    if (new_pos[0] < 0 || new_pos[1] < 0 || new_pos[1] > 7 || new_pos[0] > 7)
+        return false;
+    if (maze[new_pos[0]][new_pos[1]] == -1)
+        return false;
+
+    return true;
+}
+int dist_in_direction_to_wall(int pos[2],const vector<int> &dir,vector<vector<int>> &maze)
+{
+    int res=0;
+    int curr_pos[2]={pos[0]+dir[0],pos[1]+dir[1]};
+
+    while(isPositionLegal(curr_pos,maze))
+    {
+        res++;
+        curr_pos[0]+=dir[0];
+        curr_pos[1]+=dir[1];
+    }
+    return res;
+}
+
+Tensor mazeToTensor(vector<vector<int>> &maze, int pos[2]) {
+    Tensor t({9}, 0);
+    t[{0}]= dist_in_direction_to_wall(pos,{-1,0},maze);
+    t[{1}]= dist_in_direction_to_wall(pos,{1,0},maze);
+    t[{2}]= dist_in_direction_to_wall(pos,{0,-1},maze);
+    t[{3}]= dist_in_direction_to_wall(pos,{0,1},maze);
+    t[{4}] = pos[0];
+    t[{5}] = pos[1];
+    t[{6}] = 14-pos[0]-pos[1];
+    t[{7}] = 7-pos[0];
+    t[{8}] = 7-pos[1];
+    t.reShape({1, 9});
     return t;
 
 }
@@ -57,18 +83,11 @@ bool reached_fin(int pos[2], int end[2]) {
     return pos[0] == end[0] && pos[1] == end[1];
 }
 
-bool isPositionLegal(int new_pos[2], vector<vector<int>> &maze) {
-    if (new_pos[0] < 0 || new_pos[1] < 0 || new_pos[1] > 7 || new_pos[0] > 7)
-        return false;
-    if (maze[new_pos[0]][new_pos[1]] == -1)
-        return false;
 
-    return true;
-}
 
 double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2]) {
 
-    double reward = -5;
+    double reward = 0;
     int new_pos[2];
     if (action == 0) {
         new_pos[0] = pos[0] - 1;
@@ -76,7 +95,7 @@ double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2])
     } else if (action == 1) {
         new_pos[0] = pos[0] + 1;
         new_pos[1] = pos[1];
-        reward = 10;
+
     } else if (action == 2) {
         new_pos[0] = pos[0];
         new_pos[1] = pos[1] - 1;
@@ -93,12 +112,13 @@ double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2])
         pos[1] = new_pos[1];
         maze[pos[0]][pos[1]] = 1;
         if (reached_fin(pos, end))
-            reward = 100;
+            reward = 1000;
         else if (action == 1 || action == 3) {
-            reward = 5;
-        }
+            reward = -1;
+        } else
+            reward = -2;
     } else
-        reward = -10;
+        reward = -8;
     return reward;
 
 }
@@ -106,7 +126,7 @@ double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2])
 void mazeGame() {
     int pos[2] = {0, 0};
     int end[2] = {7, 7};
-    auto maze = init_maze(pos, end, 10);
+    auto maze = init_maze(pos, end, 8);
     Tensor t = mazeToTensor(maze, pos);
 
     string out_message;

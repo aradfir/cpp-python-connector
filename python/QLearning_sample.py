@@ -14,9 +14,9 @@ class DQN:
         self.memory = deque(maxlen=2000)
 
         self.gamma = 0.85
-        self.epsilon = 0.95
+        self.epsilon = 0.9
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.98
         self.learning_rate = 0.005
         self.tau = .125
 
@@ -73,7 +73,7 @@ class DQN:
 
 
 current_state, latest_action = None, None
-dqn_agent = DQN(66, 4)
+dqn_agent = DQN(9, 4)
 
 from parse_utils import list_to_numpy,encode_message
 
