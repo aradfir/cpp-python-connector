@@ -3,4 +3,4 @@ project(socket_test)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(socket_test main.cpp Tensor.cpp)
+add_executable(socket_test main.cpp Tensor.cpp PythonConnector.cpp PythonConnector.h)
