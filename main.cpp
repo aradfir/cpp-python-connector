@@ -36,63 +36,91 @@ void print_maze(const vector<vector<int>> &maze) {
     }
 }
 
-vector<vector<int>> init_maze(int pos[2], int end[2]) {
+vector<vector<int>> init_maze(int pos[2], int end[2], int num_walls) {
     vector<vector<int>> maze(8, vector<int>(8, 0));
+    srand(time(NULL));
     //maze[0][6]=-1;
     maze[pos[0]][pos[1]] = 1;
     maze[end[0]][end[1]] = 2;
+    for (int i = 0; i < num_walls; i++) {
+        int j = rand() % 8, k = rand() % 8;
+        if (maze[j][k] == 0) {
+            maze[j][k] = -1;
+        } else {
+            i--;
+        }
+    }
     return maze;
 }
-bool reached_fin(int pos[2],int end[2]){
+
+bool reached_fin(int pos[2], int end[2]) {
     return pos[0] == end[0] && pos[1] == end[1];
 }
-double do_action(vector<vector<int>> &maze,int &action,int pos[2],int end[2])
-{
-    maze[pos[0]][pos[1]] = 0;
+
+bool isPositionLegal(int new_pos[2], vector<vector<int>> &maze) {
+    if (new_pos[0] < 0 || new_pos[1] < 0 || new_pos[1] > 7 || new_pos[0] > 7)
+        return false;
+    if (maze[new_pos[0]][new_pos[1]] == -1)
+        return false;
+
+    return true;
+}
+
+double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2]) {
+
     double reward = -5;
+    int new_pos[2];
     if (action == 0) {
-        pos[0]--;
-        if (pos[0] < 0)
-            pos[0] = 0;
+        new_pos[0] = pos[0] - 1;
+        new_pos[1] = pos[1];
     } else if (action == 1) {
-        pos[0]++;
-        if (pos[0] > 7)
-            pos[0] = 7;
-        else reward = 10;
+        new_pos[0] = pos[0] + 1;
+        new_pos[1] = pos[1];
+        reward = 10;
     } else if (action == 2) {
-        pos[1]--;
+        new_pos[0] = pos[0];
+        new_pos[1] = pos[1] - 1;
         if (pos[1] < 0)
             pos[1] = 0;
     } else if (action == 3) {
-        pos[1]++;
-        if (pos[1] > 7)
-            pos[1] = 7;
-        else reward = 10;
+        new_pos[0] = pos[0];
+        new_pos[1] = pos[1] + 1;
+
     }
-    maze[pos[0]][pos[1]] = 1;
-    if (reached_fin(pos,end))
-        reward = 100;
+    if (isPositionLegal(new_pos, maze)) {
+        maze[pos[0]][pos[1]] = 0;
+        pos[0] = new_pos[0];
+        pos[1] = new_pos[1];
+        maze[pos[0]][pos[1]] = 1;
+        if (reached_fin(pos, end))
+            reward = 100;
+        else if (action == 1 || action == 3) {
+            reward = 5;
+        }
+    } else
+        reward = -10;
     return reward;
 
 }
+
 void mazeGame() {
     int pos[2] = {0, 0};
     int end[2] = {7, 7};
-    auto maze = init_maze(pos, end);
+    auto maze = init_maze(pos, end, 10);
     Tensor t = mazeToTensor(maze, pos);
 
     string out_message;
     Tensor *res = con.send_tensor_data("QLearning_sample", "init_state", "", t, out_message);
     cout << out_message << string(*res) << endl;
     int steps = 0;
-    while (!reached_fin(pos,end)) {
+    while (!reached_fin(pos, end)) {
         res = con.send_tensor_data("QLearning_sample", "get_action", "", t, out_message);
         print_maze(maze);
         int action = (*res)[{0}];
         cout << out_message << " " << action << endl;
-        double reward= do_action(maze,action,pos,end);
+        double reward = do_action(maze, action, pos, end);
         t = mazeToTensor(maze, pos);
-        bool is_fin = reached_fin(pos,end);
+        bool is_fin = reached_fin(pos, end);
         string reward_fin = to_string(reward) + " " + to_string(is_fin);
         res = con.send_tensor_data("QLearning_sample", "get_reward_new_state", reward_fin, t, out_message);
         cout << out_message << string(*res) << endl;

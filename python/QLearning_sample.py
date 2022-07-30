@@ -14,9 +14,9 @@ class DQN:
         self.memory = deque(maxlen=2000)
 
         self.gamma = 0.85
-        self.epsilon = 0.8
+        self.epsilon = 0.95
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.98
+        self.epsilon_decay = 0.995
         self.learning_rate = 0.005
         self.tau = .125
 
@@ -27,7 +27,7 @@ class DQN:
         model = Sequential()
 
         model.add(Dense(24, input_dim=self.state_shape, activation="relu"))
-        #model.add(Dense(48, activation="relu"))
+        model.add(Dense(48, activation="relu"))
         #model.add(Dense(24, activation="relu"))
         model.add(Dense(self.output_shape))
         model.compile(loss="mean_squared_error",
