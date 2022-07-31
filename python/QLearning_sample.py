@@ -16,8 +16,8 @@ class DQN:
         self.gamma = 0.85
         self.epsilon = 0.9
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.98
-        self.learning_rate = 0.005
+        self.epsilon_decay = 0.99
+        self.learning_rate = 0.02
         self.tau = .125
 
         self.model = self.create_model()
@@ -26,8 +26,8 @@ class DQN:
     def create_model(self):
         model = Sequential()
 
-        model.add(Dense(24, input_dim=self.state_shape, activation="relu"))
-        model.add(Dense(48, activation="relu"))
+        model.add(Dense(10, input_dim=self.state_shape, activation="relu"))
+        #model.add(Dense(4, activation="relu"))
         #model.add(Dense(24, activation="relu"))
         model.add(Dense(self.output_shape))
         model.compile(loss="mean_squared_error",
@@ -46,7 +46,7 @@ class DQN:
         self.memory.append([state, action, reward, new_state, done])
 
     def replay(self):
-        batch_size = 32
+        batch_size = 15
         if len(self.memory) < batch_size:
             return
 
@@ -73,7 +73,7 @@ class DQN:
 
 
 current_state, latest_action = None, None
-dqn_agent = DQN(9, 4)
+dqn_agent = DQN(11, 4)
 
 from parse_utils import list_to_numpy,encode_message
 
