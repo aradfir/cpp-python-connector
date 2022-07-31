@@ -37,7 +37,7 @@ int dist_in_direction_to_wall(int pos[2], const vector<int> &dir, vector<vector<
 }
 
 Tensor mazeToTensor(vector<vector<int>> &maze, int pos[2]) {
-    Tensor t({27}, 0);
+    Tensor t({11}, 0);
 //    t[{0}]= dist_in_direction_to_wall(pos,{-1,0},maze)/7.0;
 //    t[{1}]= dist_in_direction_to_wall(pos,{1,0},maze)/7.0;
 //    t[{2}]= dist_in_direction_to_wall(pos,{0,-1},maze)/7.0;
@@ -46,10 +46,10 @@ Tensor mazeToTensor(vector<vector<int>> &maze, int pos[2]) {
     int start_slice_col;
     int end_slice_row;
     int end_slice_col;
-    start_slice_row = pos[0] - 2;
-    end_slice_row = pos[0] + 2;
-    start_slice_col = pos[1] - 2;
-    end_slice_col = pos[1] + 2;
+    start_slice_row = pos[0] - 1;
+    end_slice_row = pos[0] + 1;
+    start_slice_col = pos[1] - 1;
+    end_slice_col = pos[1] + 1;
 
     for (int i = start_slice_row; i <= end_slice_row; i++) {
         for (int j = start_slice_col; j <= end_slice_col; j++) {
@@ -60,9 +60,9 @@ Tensor mazeToTensor(vector<vector<int>> &maze, int pos[2]) {
 //    t[{9}] = pos[0] / 7.0;
 //    t[{10}] = pos[1] / 7.0;
 //    t[{11}] = (14 - pos[0] - pos[1]) / 7.0;
-    t[{25}] = (8 - pos[0]) / 7.0;
-    t[{26}] = (8 - pos[1]) / 7.0;
-    t.reShape({1, 27});
+    t[{9}] = (8 - pos[0]) / 7.0;
+    t[{10}] = (8 - pos[1]) / 7.0;
+    t.reShape({1, 11});
     return t;
 
 }
@@ -150,9 +150,9 @@ double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2])
         if (reached_fin(pos, end))
             reward = 10;
         else if (action == 1 || action == 3) {
-            reward = -0.33;
+            reward = -0.35;
         } else
-            reward = -0.66;
+            reward = -0.45;
     } else
         reward = -1;
     return reward;

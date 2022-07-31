@@ -14,7 +14,7 @@ class DQN:
         self.memory = deque(maxlen=2000)
 
         self.gamma = 0.85
-        self.epsilon = 0.9
+        self.epsilon = 0.99
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
         self.learning_rate = 0.02
@@ -26,8 +26,8 @@ class DQN:
     def create_model(self):
         model = Sequential()
 
-        model.add(Dense(10, input_dim=self.state_shape, activation="relu"))
-        #model.add(Dense(4, activation="relu"))
+        model.add(Dense(16, input_dim=self.state_shape, activation="relu"))
+        model.add(Dense(4, activation="relu"))
         #model.add(Dense(24, activation="relu"))
         model.add(Dense(self.output_shape))
         model.compile(loss="mean_squared_error",
@@ -46,7 +46,7 @@ class DQN:
         self.memory.append([state, action, reward, new_state, done])
 
     def replay(self):
-        batch_size = 15
+        batch_size = 16
         if len(self.memory) < batch_size:
             return
 
