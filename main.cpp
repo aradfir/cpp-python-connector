@@ -16,7 +16,7 @@ using namespace std;
 PythonConnector con(PORT);
 
 bool isPositionLegal(int new_pos[2], vector<vector<int>> &maze) {
-    if (new_pos[0] < 0 || new_pos[1] < 0 || new_pos[1] > maze.size() || new_pos[0] > maze.size() )
+    if (new_pos[0] < 0 || new_pos[1] < 0 || new_pos[1] > maze.size() || new_pos[0] > maze.size())
         return false;
     if (maze[new_pos[0]][new_pos[1]] == -1)
         return false;
@@ -37,7 +37,7 @@ int dist_in_direction_to_wall(int pos[2], const vector<int> &dir, vector<vector<
 }
 
 Tensor mazeToTensor(vector<vector<int>> &maze, int pos[2]) {
-    Tensor t({11}, 0);
+    Tensor t({27}, 0);
 //    t[{0}]= dist_in_direction_to_wall(pos,{-1,0},maze)/7.0;
 //    t[{1}]= dist_in_direction_to_wall(pos,{1,0},maze)/7.0;
 //    t[{2}]= dist_in_direction_to_wall(pos,{0,-1},maze)/7.0;
@@ -46,57 +46,43 @@ Tensor mazeToTensor(vector<vector<int>> &maze, int pos[2]) {
     int start_slice_col;
     int end_slice_row;
     int end_slice_col;
-    if (pos[0] == 0) {
-        start_slice_row = 0;
-        end_slice_row = 2;
+    start_slice_row = pos[0] - 2;
+    end_slice_row = pos[0] + 2;
+    start_slice_col = pos[1] - 2;
+    end_slice_col = pos[1] + 2;
 
-    } else if (pos[0] == 7) {
-        start_slice_row = 5;
-        end_slice_row = 7;
-    } else {
-        start_slice_row = pos[0] - 1;
-        end_slice_row = pos[0] + 1;
-    }
-    if (pos[1] == 0) {
-        start_slice_col = 0;
-        end_slice_col = 2;
-
-    } else if (pos[1] == 7) {
-        start_slice_col = 5;
-        end_slice_col = 7;
-    } else {
-        start_slice_col = pos[1] - 1;
-        end_slice_col = pos[1] + 1;
-    }
     for (int i = start_slice_row; i <= end_slice_row; i++) {
         for (int j = start_slice_col; j <= end_slice_col; j++) {
             int h = i - start_slice_row, v = j - start_slice_col;
-            t[{3 * h + v}] = maze[i][j];
+            t[{(end_slice_col-start_slice_col+1) * h + v}] = maze[i][j];
         }
     }
 //    t[{9}] = pos[0] / 7.0;
 //    t[{10}] = pos[1] / 7.0;
 //    t[{11}] = (14 - pos[0] - pos[1]) / 7.0;
-    t[{9}] = (8 - pos[0]) / 7.0;
-    t[{10}] = (8 - pos[1]) / 7.0;
-    t.reShape({1, 11});
+    t[{25}] = (8 - pos[0]) / 7.0;
+    t[{26}] = (8 - pos[1]) / 7.0;
+    t.reShape({1, 27});
     return t;
 
 }
 
 void print_maze(const vector<vector<int>> &maze) {
-    for (int i = 0; i < 10; ++i) {
-        for (int j = 0; j < 10; ++j) {
-            char c=' ';
+    for (int i = 0; i < maze.size(); ++i) {
+        for (int j = 0; j < maze[i].size(); ++j) {
+            char c = ' ';
             switch (maze[i][j]) {
-                case -1: c = '#';
+                case -1:
+                    c = '#';
                     break;
-                case 1: c= '@';
+                case 1:
+                    c = '@';
                     break;
                 case 2:
-                    c='$';
+                    c = '$';
                     break;
-                default: c=' ';
+                default:
+                    c = ' ';
             }
             cout << c << " ";
         }
@@ -105,20 +91,23 @@ void print_maze(const vector<vector<int>> &maze) {
 }
 
 vector<vector<int>> init_maze(int pos[2], int end[2], int num_walls) {
-    vector<vector<int>> maze(10, vector<int>(10, 0));
-    for(int i=0;i<10;i++)
-    {
-        maze[0][i]=-1;
-        maze[i][0]=-1;
-        maze[9][i]=-1;
-        maze[i][9]=-1;
+    vector<vector<int>> maze(12, vector<int>(12, 0));
+    for (int i = 0; i < 12; i++) {
+        maze[0][i] = -1;
+        maze[i][0] = -1;
+        maze[10][i] = -1;
+        maze[i][10] = -1;
+        maze[1][i] = -1;
+        maze[i][1] = -1;
+        maze[11][i] = -1;
+        maze[i][11] = -1;
     }
     srand(time(NULL));
     //maze[0][6]=-1;
     maze[pos[0]][pos[1]] = 1;
     maze[end[0]][end[1]] = 2;
     for (int i = 0; i < num_walls; i++) {
-        int j = 1+rand() % 8, k = 1+rand() % 8;
+        int j = 2 + rand() % 8, k = 2 + rand() % 8;
         if (maze[j][k] == 0) {
             maze[j][k] = -1;
         } else {
@@ -161,7 +150,7 @@ double do_action(vector<vector<int>> &maze, int &action, int pos[2], int end[2])
         if (reached_fin(pos, end))
             reward = 10;
         else if (action == 1 || action == 3) {
-            reward =-0.33;
+            reward = -0.33;
         } else
             reward = -0.66;
     } else
@@ -178,8 +167,8 @@ void mazeGame(vector<vector<int>> maze) {
 }
 
 void mazeGame(int numOfWalls = 10) {
-    int pos[2] = {1, 1};
-    int end[2] = {8, 8};
+    int pos[2] = {2, 2};
+    int end[2] = {9, 9};
     auto maze = init_maze(pos, end, numOfWalls);
     Tensor t = mazeToTensor(maze, pos);
 
@@ -218,8 +207,8 @@ int main(int argc, char const *argv[]) {
     numOfRunsPerWallCount.push_back(6);
     //auto maze=init_maze(pos,end,3);
     for (int i = 0; i < numOfRunsPerWallCount.size(); ++i) {
-        for(int j=0;j<numOfRunsPerWallCount[i];j++)
-        mazeGame(i );
+        for (int j = 0; j < numOfRunsPerWallCount[i]; j++)
+            mazeGame(i);
     }
 
 //    Tensor tensor2({7}, 0);
